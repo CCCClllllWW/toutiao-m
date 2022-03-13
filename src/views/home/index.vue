@@ -24,41 +24,77 @@
       </van-tab>
       <div slot="nav-right" class="placeholder"></div>
       <div slot="nav-right" class="hamburger-btn">
-        <i class="toutiao toutiao-gengduo"></i>
+        <i
+          @click="isEditChannelShow = true"
+          class="toutiao toutiao-gengduo"
+        ></i>
       </div>
     </van-tabs>
     <!-- /频道列表 -->
+    <van-popup
+      class="edit-channel-popup"
+      v-model="isEditChannelShow"
+      position="bottom"
+      :style="{ height: '100%' }"
+      closeable
+      close-icon-position="top-left"
+    >
+      <channel-edit
+        :my-channels="channels"
+        :active="active"
+      />
+    </van-popup>
+    <!-- 频道编辑弹出层 -->
   </div>
 </template>
 
 <script>
 import { getUserChannels } from '@/api/user'
-import ArticleList from '@/components/article-list'
+import ArticleList from './components/article-list'
+import ChannelEdit from './components/channel-edit'
+import { mapState } from 'vuex'
+import { getItem } from '@/utils/storage'
 
 export default {
   name: 'HomeIndex',
   components: {
-    ArticleList
+    ArticleList,
+    ChannelEdit
   },
   props: {},
   data () {
     return {
       active: 0,
-      channels: []
+      channels: [],
+      isEditChannelShow: false
     }
   },
-  computed: {},
+  computed: {
+    ...mapState(['user'])
+  },
   watch: {},
   created () {
     this.loadChannels()
   },
-  mounted () {
-  },
+  mounted () {},
   methods: {
     async loadChannels () {
       try {
-        const { data } = await getUserChannels()
-        this.channels = data.data.channels
+        let channels = []
+        if (this.users) {
+          const { data } = await getUserChannels()
+          channels = data.data.channels
+        } else {
+          const localChannels = getItem('TOUTIAO_CHANNELS')
+          if (localChannels) {
+            channels = localChannels
+          } else {
+            //    没有，请求获取默认频道列表
+            const { data } = await getUserChannels()
+            channels = data.data.channels
+          }
+        }
+        this.channels = channels
       } catch (err) {
         this.$toast('获取频道数据失败')
       }
@@ -122,6 +158,11 @@ export default {
       flex-shrink: 0;
       width: 66px;
       height: 82px;
+    }
+
+    .edit-channel-popup {
+      padding-top: 100px;
+      box-sizing: border-box;
     }
 
     .hamburger-btn {
