@@ -4,7 +4,7 @@
       v-model="isreFreshLoading"
       @refresh="onRefresh"
       :success-text="refreshSuccessText"
-      success-duration="1500"
+      :success-duration="1500"
     >
       <van-list
         v-model="loading"

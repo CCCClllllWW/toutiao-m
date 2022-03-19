@@ -3,13 +3,13 @@
     <van-cell :border="false">
       <div slot="title" class="title-text">我的频道</div>
       <van-button
-      class="edit-btn"
-      size="mini"
-      round
-      type="danger"
-      plain
-      @click="isEdit  = !isEdit"
-      >编辑</van-button
+        class="edit-btn"
+        size="mini"
+        round
+        type="danger"
+        plain
+        @click="isEdit = !isEdit"
+        >{{ !isEdit ? "编辑" : "完成" }}</van-button
       >
     </van-cell>
     <van-grid class="my-grid" :gutter="10">
@@ -17,22 +17,20 @@
         class="grid-item"
         v-for="(channel, index) in myChannels"
         :key="index"
+        @click="onMyChannelClick(channel,index)"
       >
-      <van-icon
-      v-show="isEdit"
-      slot="icon"
-      name="clear"
-      ></van-icon>
-        <span class="text" slot="text" :class="{ active: active === index }">{{
+        <van-icon
+          v-show="isEdit && !fixedChannel.includes(channel.id)"
+          slot="icon"
+          name="clear"
+        ></van-icon>
+        <span class="text" slot="text" :class="{ active: index === active }">{{
           channel.name
         }}</span>
       </van-grid-item>
     </van-grid>
     <van-cell :border="false">
-      <div
-      slot="title"
-      class="title-text"
-      >频道推荐</div>
+      <div slot="title" class="title-text">频道推荐</div>
     </van-cell>
     <van-grid class="recommend-grid" :gutter="10" clickable>
       <van-grid-item
@@ -48,7 +46,9 @@
 </template>
 
 <script>
-import { getAllChannels } from '@/api/channel'
+import { getAllChannels, addUserChannel, deleteUserChannel } from '@/api/channel'
+import { mapState } from 'vuex'
+import { setItem } from '@/utils/storage'
 
 export default {
   name: 'ChannelEdit',
@@ -67,13 +67,15 @@ export default {
     return {
       allChannels: [],
       MyChannels: this.myChannels,
-      isEdit: false
+      isEdit: false,
+      fixedChannel: [0]
     }
   },
   computed: {
+    ...mapState(['user']),
     recommendChannels () {
-      return this.allChannels.filter(channel => {
-        return !this.myChannels.find(myChannel => {
+      return this.allChannels.filter((channel) => {
+        return !this.myChannels.find((myChannel) => {
           return myChannel.id === channel.id
         })
         // return !mychannel
@@ -86,7 +88,7 @@ export default {
   },
   mounted () {},
   methods: {
-    // 加载所有频道
+    // 加载 所有频道
     async loadAllChannels () {
       try {
         const { data } = await getAllChannels()
@@ -95,14 +97,48 @@ export default {
         this.$toast('获取频道列表数据失败')
       }
     },
-    onAddChannel (channel) {
+    async onAddChannel (channel) {
       this.MyChannels.push(channel)
+      if (this.user) {
+        try {
+          await addUserChannel({
+            id: channel.id,
+            seq: this.MyChannels.length
+          })
+        } catch (err) {
+          console.log(err)
+          this.$toast('保存失败')
+        }
+      } else {
+        setItem('TOUTIAO_CHANNELS', this.MyChannels)
+      }
+    },
+    onMyChannelClick (channel, index) {
+      if (this.isEdit) {
+        if (this.fixedChannel.includes(channel.id)) {
+          return
+        }
+        this.MyChannels.splice(index, 1)
+        if (index <= this.active) {
+          this.$emit('update-active', this.active - 1, true)
+        }
+        this.deleteChannel(channel)
+      } else {
+        this.$emit('update-active', index, false)
+      }
+    },
+    async deleteChannel (channel) {
+      try {
+        if (this.user) {
+          await deleteUserChannel(channel.id)
+        } else {
+          setItem('TOUTIAO_CHANNELS', this.MyChannels)
+        }
+      } catch (err) {
+        console.log(err)
+        this.$toast('操作失败')
+      }
     }
-    // onMyChannelClick (channelItem , index) {
-    //   if (this.isEdit) {
-
-    //   }
-    // }
   }
 }
 </script>

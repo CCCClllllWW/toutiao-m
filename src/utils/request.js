@@ -1,8 +1,24 @@
 import axios from 'axios'
 import store from '@/store'
+import JSONBig from 'json-bigint'
+
+// const jsonStr = '{"art_id": 1245952173786007552}'
+// console.log(JSON.parse(jsonStr))
+// console.log(JSONBig.parse(jsonStr))
+// console.log(JSONBig.parse(jsonStr).art_id.toString())
 
 const request = axios.create({
-  baseURL: 'http://toutiao.itheima.net/'
+  baseURL: 'http://toutiao.itheima.net/',
+  transformResponse: [function (data) {
+    try {
+      return JSONBig.parse(data)
+    } catch (err) {
+      return data
+    }
+
+    // axios 默认会在内部这样来处理后端返回的数据
+    // return JSON.parse(data)
+  }]
 })
 // 请求拦截器
 request.interceptors.request.use(function (config) {

@@ -9,6 +9,7 @@
         size="small"
         round
         icon="search"
+        to="/search"
         >搜索</van-button
       >
     </van-nav-bar>
@@ -20,14 +21,14 @@
         :key="channel.id"
       >
         <!-- 文章列表 -->
-        <article-list ref="article-list" :channel="channel" />
+        <article-list
+        ref="article-list"
+        :channel="channel"
+        />
       </van-tab>
       <div slot="nav-right" class="placeholder"></div>
-      <div slot="nav-right" class="hamburger-btn">
-        <i
-          @click="isEditChannelShow = true"
-          class="toutiao toutiao-gengduo"
-        ></i>
+      <div slot="nav-right" class="hamburger-btn" @click="isEditChannelShow = true">
+        <i class="toutiao toutiao-gengduo"></i>
       </div>
     </van-tabs>
     <!-- /频道列表 -->
@@ -42,6 +43,7 @@
       <channel-edit
         :my-channels="channels"
         :active="active"
+        @update-active="onUpdateActive"
       />
     </van-popup>
     <!-- 频道编辑弹出层 -->
@@ -81,7 +83,7 @@ export default {
     async loadChannels () {
       try {
         let channels = []
-        if (this.users) {
+        if (this.user) {
           const { data } = await getUserChannels()
           channels = data.data.channels
         } else {
@@ -98,6 +100,11 @@ export default {
       } catch (err) {
         this.$toast('获取频道数据失败')
       }
+    },
+    onUpdateActive (index, isEditChannelShow = true) {
+      console.log('home', index)
+      this.active = index
+      this.isEditChannelShow = isEditChannelShow
     }
   }
 }
